@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#e91f3d" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>Billet DEMO</title>
+  <style>
+    :root{
+      --header:#e91f3d;
+      --ink:#242424;
+      --muted:#f1f2f5;
+      --paper:#ffffff;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;background:#efefef;color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+      -webkit-tap-highlight-color:transparent;
+    }
+    body{display:flex;justify-content:center;min-height:100vh}
+    .app{
+      width:min(100vw,520px);min-height:100vh;background:var(--paper);
+      overflow:hidden;position:relative;
+    }
+    .header{
+      height:calc(84px + env(safe-area-inset-top));
+      padding-top:env(safe-area-inset-top);
+      background:var(--header);color:white;
+      display:flex;align-items:center;padding-left:20px;padding-right:18px;
+      gap:18px;font-size:29px;font-weight:400;
+    }
+    .back{font-size:42px;line-height:1;font-weight:200;transform:translateY(-2px)}
+    .title{letter-spacing:-.5px}
+    .demo-chip{
+      margin-left:auto;border:1.5px solid rgba(255,255,255,.8);
+      border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:.7px;
+    }
+
+    .image-zone{
+      position:relative;background:#fff;padding:10px 20px 22px;
+      overflow:hidden;
+    }
+    .image-frame{
+      aspect-ratio:1/1;width:100%;
+      position:relative;overflow:hidden;background:
+        repeating-linear-gradient(135deg,#f7f7f7 0,#f7f7f7 11px,#fbfbfb 11px,#fbfbfb 22px);
+      border:1px solid #f1f1f1;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .image-frame img{width:100%;height:100%;object-fit:cover;display:none}
+    .placeholder{
+      text-align:center;padding:24px;color:#666;
+      font-size:18px;line-height:1.35;
+    }
+    .placeholder b{display:block;font-size:22px;color:#222;margin-bottom:8px}
+    .watermark{
+      pointer-events:none;position:absolute;left:-12%;right:-12%;top:44%;
+      transform:rotate(-18deg);
+      background:rgba(255,255,255,.80);
+      border-top:2px solid rgba(233,31,61,.6);
+      border-bottom:2px solid rgba(233,31,61,.6);
+      color:#d71536;text-align:center;font-weight:900;letter-spacing:2px;
+      font-size:clamp(19px,5vw,30px);padding:8px 0;
+      z-index:3;
+    }
+
+    .clock{
+      min-height:92px;display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:clamp(45px,12vw,62px);color:white;
+      letter-spacing:-2px;
+      background:linear-gradient(90deg,#ffb278 0%,#d644a6 55%,#d94179 100%);
+      font-variant-numeric:tabular-nums;
+    }
+
+    .validity{
+      background:#f0f1f4;padding:24px 20px 22px;
+    }
+    .label{font-size:18px;margin-bottom:4px}
+    .strong-line{font-size:20px;font-weight:750;margin-bottom:24px}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .two-col .col:last-child{text-align:right}
+    .small-label{font-size:18px;margin-bottom:5px}
+    .edit{
+      display:inline-block;position:relative;cursor:pointer;
+      text-decoration:none;border-bottom:1px dashed transparent;
+    }
+    .edit:active{opacity:.55}
+    .value-strong{font-size:20px;font-weight:750;line-height:1.25}
+    .journey{padding:24px 20px 34px}
+    .journey .from{font-size:18px;margin-bottom:8px}
+    .place{font-weight:780;font-size:24px;line-height:1.25;margin-bottom:38px}
+    .person-row{display:grid;grid-template-columns:42px 1fr;align-items:start}
+    .person-icon{width:28px;height:28px;margin-top:5px;position:relative}
+    .person-icon:before{
+      content:"";position:absolute;width:13px;height:13px;border-radius:50%;
+      background:#282828;left:8px;top:0
+    }
+    .person-icon:after{
+      content:"";position:absolute;width:28px;height:13px;border-radius:14px 14px 3px 3px;
+      background:#282828;left:0;bottom:0
+    }
+    .person-name{font-size:24px;font-weight:780;line-height:1.25}
+    .details{font-size:18px;line-height:1.35;margin-top:3px}
+    .footer{
+      border-top:1px solid #eee;background:#fff;
+      padding:16px 20px calc(18px + env(safe-area-inset-bottom));
+      text-align:center;font-size:15px;font-weight:800;letter-spacing:1px;color:#c81734;
+    }
+    .edit-hint{
+      position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));right:14px;
+      border:none;border-radius:999px;background:#222;color:#fff;
+      padding:11px 14px;font-weight:700;font-size:13px;box-shadow:0 5px 20px rgba(0,0,0,.2);
+      z-index:8;
+    }
+
+    /* modal editor */
+    .modal{
+      position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:20;
+      display:none;align-items:flex-end;justify-content:center;
+    }
+    .modal.show{display:flex}
+    .sheet{
+      width:min(100%,520px);background:#fff;border-radius:22px 22px 0 0;
+      padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+      box-shadow:0 -10px 35px rgba(0,0,0,.17);
+    }
+    .sheet h3{margin:0 0 12px;font-size:20px}
+    .sheet input[type=text]{
+      width:100%;font:inherit;font-size:19px;padding:14px 12px;border-radius:12px;
+      border:1px solid #cfcfcf;outline:none;
+    }
+    .buttons{display:flex;gap:10px;margin-top:14px}
+    .btn{flex:1;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:750}
+    .btn.secondary{background:#ededed;color:#222}
+    .btn.primary{background:#1d1d1f;color:white}
+    .btn.danger{background:#f7e5e8;color:#b3142d}
+
+    /* cropper */
+    .crop-sheet{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+    .crop-wrap{
+      width:100%;aspect-ratio:1/1;background:#111;overflow:hidden;position:relative;
+      touch-action:none;border-radius:12px;margin-top:10px;
+    }
+    #cropCanvas{width:100%;height:100%;display:block}
+    .crop-guide{
+      pointer-events:none;position:absolute;inset:0;
+      border:2px solid rgba(255,255,255,.95);
+      box-shadow:0 0 0 1000px rgba(0,0,0,.08) inset;
+    }
+    .range{width:100%;margin:14px 0 4px}
+    .mini{font-size:13px;color:#666;line-height:1.35}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <div class="back">‹</div>
+      <div class="title">Billet DEMO</div>
+      <div class="demo-chip">JEU VIDÉO</div>
+    </header>
+
+    <section class="image-zone">
+      <div class="image-frame" id="imageFrame">
+        <img id="ticketImage" alt="Image choisie" />
+        <div class="placeholder" id="placeholder">
+          <b>Toucher pour ajouter une image</b>
+          Elle sera recadrée au format carré.
+        </div>
+        <div class="watermark">DÉMO • NON VALABLE</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" hidden />
+    </section>
+
+    <section class="clock" id="clock">00:00:00</section>
+
+    <section class="validity">
+      <div class="label">Validité</div>
+      <div class="strong-line">Rayon de validité : Suisse et Liechtenstein</div>
+      <div class="two-col">
+        <div class="col">
+          <div class="small-label">De</div>
+          <div class="value-strong edit" data-key="fromDate">22.08.2026, 12:31:25</div>
+        </div>
+        <div class="col">
+          <div class="small-label">Jusqu'à</div>
+          <div class="value-strong edit" data-key="toDate">23.08.2026, 05:00:00</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="journey">
+      <div class="from">De</div>
+      <div class="place edit" data-key="place">Lieu fictif, centre</div>
+
+      <div class="person-row">
+        <div class="person-icon" aria-hidden="true"></div>
+        <div>
+          <div class="person-name edit" data-key="name">Nom du personnage</div>
+          <div class="details">
+            <span class="edit" data-key="birth">01.03.2003</span>
+            <span> · </span>
+            <span class="edit" data-key="class">2ème classe</span>
+            <span> · </span>
+            <span class="edit" data-key="fare">Plein tarif</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">DÉMO — NON VALABLE — ACCESSOIRE DE JEU VIDÉO</div>
+    <button class="edit-hint" id="resetBtn">Réinitialiser</button>
+  </main>
+
+  <!-- Editor modal -->
+  <div class="modal" id="editModal">
+    <div class="sheet">
+      <h3 id="editTitle">Modifier</h3>
+      <input id="editInput" type="text" autocomplete="off" />
+      <div class="buttons">
+        <button class="btn secondary" id="cancelEdit">Annuler</button>
+        <button class="btn primary" id="saveEdit">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crop modal -->
+  <div class="modal" id="cropModal">
+    <div class="sheet crop-sheet">
+      <h3>Recadrer l'image</h3>
+      <div class="crop-wrap" id="cropWrap">
+        <canvas id="cropCanvas" width="800" height="800"></canvas>
+        <div class="crop-guide"></div>
+      </div>
+      <input class="range" id="zoom" type="range" min="1" max="3" step="0.01" value="1" />
+      <div class="mini">Fais glisser l'image avec le doigt, puis ajuste le zoom.</div>
+      <div class="buttons">
+        <button class="btn secondary" id="cancelCrop">Annuler</button>
+        <button class="btn primary" id="applyCrop">Utiliser</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const STORAGE = "billet_demo_game_v1";
+  const state = JSON.parse(localStorage.getItem(STORAGE) || "{}");
+
+  const defaults = {
+    fromDate: "22.08.2026, 12:31:25",
+    toDate: "23.08.2026, 05:00:00",
+    place: "Lieu fictif, centre",
+    name: "Nom du personnage",
+    birth: "01.03.2003",
+    class: "2ème classe",
+    fare: "Plein tarif",
+    image: ""
+  };
+  const data = {...defaults, ...state};
+
+  function persist(){ localStorage.setItem(STORAGE, JSON.stringify(data)); }
+
+  document.querySelectorAll(".edit").forEach(el => {
+    const k = el.dataset.key;
+    el.textContent = data[k] ?? defaults[k];
+  });
+
+  const img = document.getElementById("ticketImage");
+  const ph = document.getElementById("placeholder");
+  function applyImage(){
+    if(data.image){
+      img.src = data.image; img.style.display="block"; ph.style.display="none";
+    } else {
+      img.removeAttribute("src"); img.style.display="none"; ph.style.display="block";
+    }
+  }
+  applyImage();
+
+  // live clock
+  const clock = document.getElementById("clock");
+  function tick(){
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2,"0");
+    const m = String(d.getMinutes()).padStart(2,"0");
+    const s = String(d.getSeconds()).padStart(2,"0");
+    clock.textContent = `${h}:${m}:${s}`;
+  }
+  tick(); setInterval(tick, 250);
+
+  // editor
+  const editModal = document.getElementById("editModal");
+  const editInput = document.getElementById("editInput");
+  let activeEl = null;
+  document.querySelectorAll(".edit").forEach(el => {
+    el.addEventListener("click", () => {
+      activeEl = el;
+      editInput.value = el.textContent.trim();
+      editModal.classList.add("show");
+      setTimeout(()=>editInput.focus(), 100);
+    });
+  });
+  document.getElementById("cancelEdit").onclick = () => editModal.classList.remove("show");
+  document.getElementById("saveEdit").onclick = () => {
+    if(!activeEl) return;
+    const val = editInput.value.trim() || " ";
+    activeEl.textContent = val;
+    data[activeEl.dataset.key] = val;
+    persist();
+    editModal.classList.remove("show");
+  };
+  editModal.addEventListener("click", e => {
+    if(e.target === editModal) editModal.classList.remove("show");
+  });
+
+  // image picking + crop
+  const frame = document.getElementById("imageFrame");
+  const fileInput = document.getElementById("fileInput");
+  frame.addEventListener("click", () => fileInput.click());
+
+  const cropModal = document.getElementById("cropModal");
+  const canvas = document.getElementById("cropCanvas");
+  const ctx = canvas.getContext("2d");
+  const zoom = document.getElementById("zoom");
+  let sourceImg = null, baseScale = 1, scale = 1, offX = 0, offY = 0;
+  let dragging=false, lastX=0, lastY=0;
+
+  function drawCrop(){
+    if(!sourceImg) return;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const w = sourceImg.naturalWidth * baseScale * scale;
+    const h = sourceImg.naturalHeight * baseScale * scale;
+    const x = (canvas.width - w)/2 + offX;
+    const y = (canvas.height - h)/2 + offY;
+    ctx.drawImage(sourceImg, x, y, w, h);
+  }
+
+  fileInput.addEventListener("change", e => {
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      sourceImg = new Image();
+      sourceImg.onload = () => {
+        baseScale = Math.max(canvas.width/sourceImg.naturalWidth, canvas.height/sourceImg.naturalHeight);
+        scale=1; offX=0; offY=0; zoom.value="1";
+        drawCrop();
+        cropModal.classList.add("show");
+      };
+      sourceImg.src = r.result;
+    };
+    r.readAsDataURL(f);
+    fileInput.value="";
+  });
+
+  const cropWrap = document.getElementById("cropWrap");
+  cropWrap.addEventListener("pointerdown", e => {
+    dragging=true; lastX=e.clientX; lastY=e.clientY; cropWrap.setPointerCapture(e.pointerId);
+  });
+  cropWrap.addEventListener("pointermove", e => {
+    if(!dragging) return;
+    const rect = cropWrap.getBoundingClientRect();
+    const fx = canvas.width/rect.width;
+    const fy = canvas.height/rect.height;
+    offX += (e.clientX-lastX)*fx;
+    offY += (e.clientY-lastY)*fy;
+    lastX=e.clientX;lastY=e.clientY; drawCrop();
+  });
+  cropWrap.addEventListener("pointerup", ()=>dragging=false);
+  cropWrap.addEventListener("pointercancel", ()=>dragging=false);
+
+  zoom.addEventListener("input", () => { scale = parseFloat(zoom.value); drawCrop(); });
+  document.getElementById("cancelCrop").onclick = () => cropModal.classList.remove("show");
+  document.getElementById("applyCrop").onclick = () => {
+    drawCrop();
+    data.image = canvas.toDataURL("image/jpeg", .9);
+    persist(); applyImage(); cropModal.classList.remove("show");
+  };
+
+  // reset
+  document.getElementById("resetBtn").onclick = () => {
+    if(confirm("Réinitialiser tous les textes et l'image ?")){
+      localStorage.removeItem(STORAGE);
+      location.reload();
+    }
+  };
+
+  // service worker
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
